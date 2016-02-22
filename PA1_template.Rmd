@@ -146,7 +146,7 @@ hist(grouped.by.date$summ,
 dev.off()
 ```
 
-![Histogram](C:\Users\Lenovo\Desktop\solution\hist2.png)
+![Histogram](figure/hist2.png)
 
 It can be seen that histogram of the total number of steps taken each day in this case has the same shape then the same histogram with removed **NA**'s. The difference is that now hisogram is higher in it center.
 
