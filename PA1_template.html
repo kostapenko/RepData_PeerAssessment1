@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+
+<meta charset="utf-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="pandoc" />
+
+
+
+<title>Reproducible Research: Peer Assessment 1</title>
+
+<script src="PA1_template_files/jquery-1.11.0/jquery.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<link href="PA1_template_files/bootstrap-3.3.1/css/bootstrap.min.css" rel="stylesheet" />
+<script src="PA1_template_files/bootstrap-3.3.1/js/bootstrap.min.js"></script>
+<script src="PA1_template_files/bootstrap-3.3.1/shim/html5shiv.min.js"></script>
+<script src="PA1_template_files/bootstrap-3.3.1/shim/respond.min.js"></script>
+
+<style type="text/css">code{white-space: pre;}</style>
+<link rel="stylesheet"
+      href="PA1_template_files/highlight/default.css"
+      type="text/css" />
+<script src="PA1_template_files/highlight/highlight.js"></script>
+<style type="text/css">
+  pre:not([class]) {
+    background-color: white;
+  }
+</style>
+<script type="text/javascript">
+if (window.hljs && document.readyState && document.readyState === "complete") {
+   window.setTimeout(function() {
+      hljs.initHighlighting();
+   }, 0);
+}
+</script>
+
+
+
+</head>
+
+<body>
+
+<style type = "text/css">
+.main-container {
+  max-width: 940px;
+  margin-left: auto;
+  margin-right: auto;
+}
+code {
+  color: inherit;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+img { 
+  max-width:100%; 
+  height: auto; 
+}
+</style>
+<div class="container-fluid main-container">
+
+
+<div id="header">
+<h1 class="title">Reproducible Research: Peer Assessment 1</h1>
+</div>
+
+
+<div id="loading-data." class="section level2">
+<h2>Loading data.</h2>
+<p>This code downloads dataset and required packages:</p>
+<pre class="r"><code>library(dplyr)
+library(lattice)
+
+# Reading data
+url &lt;- &quot;https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip&quot;
+download.file(url, &quot;data.zip&quot;)
+data &lt;- read.csv(&quot;activity.csv&quot;)</code></pre>
+</div>
+<div id="creating-histogram-of-the-total-number-of-steps-taken-each-day." class="section level2">
+<h2>Creating histogram of the total number of steps taken each day.</h2>
+<p>Firstly we should prepare the data. The <strong>NA</strong> values should be removed, after that data should be grouped by each day and total number of steps taken each day should be calculated.</p>
+<p>The following code does id:</p>
+<pre class="r"><code># Removing NA - values
+data &lt;- data[!is.na(data$steps), ]
+# Grouping data by date, adding sum and mean of steps for each date
+grouped.by.date &lt;- group_by(data, date)
+grouped.by.date &lt;- mutate(grouped.by.date, summ = sum(steps))
+grouped.by.date &lt;- mutate(grouped.by.date, mean = mean(steps))
+grouped.by.date &lt;- unique(select(grouped.by.date, date, summ, mean))</code></pre>
+<p>After preparing data it is become possible to create histogram of the total number of steps taken each day.</p>
+<p>This code creates the histogram:</p>
+<pre class="r"><code># Plotting histogram of total number of steps taken each day
+png(filename = &quot;figure/hist1.png&quot;)
+hist(grouped.by.date$summ, 
+     main = &quot;Total number of steps taken each day&quot;, 
+     xlab = &quot;&quot;, 
+     col = &quot;orange&quot;)
+dev.off()</code></pre>
+<p><img src="figure/hist1.png" alt="Histogram" /></p>
+</div>
+<div id="mean-and-median-number-of-steps-taken-each-day." class="section level2">
+<h2>Mean and median number of steps taken each day.</h2>
+<p>Mean and median number of steps taken each day are calculated by the following code:</p>
+<pre class="r"><code># Calulating mean and median number of steps taken each day
+mean.steps &lt;- mean(grouped.by.date$summ)
+median.steps &lt;- median(grouped.by.date$summ)</code></pre>
+<p>In fact, <strong>mean</strong> and <strong>median</strong> are equal: <strong>10766.19</strong>.</p>
+</div>
+<div id="time-series-plot-of-the-average-number-of-steps-taken." class="section level2">
+<h2>Time series plot of the average number of steps taken.</h2>
+<p>This code groups data by intervals, caclulates for each interval average number of steps taken:</p>
+<pre class="r"><code># Grouping data by interval, adding mean of steps for each interval
+timeSeries &lt;- group_by(data, interval)
+timeSeries &lt;- mutate(timeSeries, mean_ts = mean(steps))
+timeSeries &lt;- unique(select(timeSeries, interval, mean_ts))</code></pre>
+<p>This code creates the plot:</p>
+<pre class="r"><code># Plotting time series plot of the average number of steps taken
+png(filename = &quot;figure/plot1.png&quot;)
+plot(timeSeries$interval, 
+     timeSeries$mean_ts, 
+     type = &#39;l&#39;,
+     main = &quot;Time series plot of the average number of steps taken&quot;,
+     xlab = &quot;Interval&quot;,
+     ylab = &quot;Average number of steps&quot;)
+grid()
+dev.off()</code></pre>
+<p><img src="figure/plot1.png" alt="Plot" /></p>
+<p>This code find 5-minute interval that, on average, contains the maximum number of steps:</p>
+<pre class="r"><code># Searching the 5-minute interval that, on average, contains the maximum number of steps
+timeSeries[timeSeries$mean_ts == max(timeSeries$mean_ts), ]</code></pre>
+<p>This 5-minute interval is equal to <strong>835</strong>.</p>
+</div>
+<div id="imputing-missing-values." class="section level2">
+<h2>Imputing missing values.</h2>
+<p><strong>NA</strong> values of steps will be replaced with it average number per corresponding interval. For example, value of step for each row where <strong>interval = 5</strong> and <strong>step = NA</strong> will be replaced with average number of steps per all rows, where <strong>interval = 5</strong>.</p>
+<p>The following code does id:</p>
+<pre class="r"><code># Reading data with NA values
+data &lt;- read.csv(&quot;activity.csv&quot;)
+
+# Contrilling if there are NA data
+table(is.na(data$steps))
+table(is.na(data$date))
+table(is.na(data$interval))
+
+# Grouping by intervals
+data &lt;- group_by(data, interval)
+# Calculating average number per each interval
+data &lt;- mutate(data, mean = mean(steps, na.rm = TRUE))
+# Replacing NA step values with average number per corresponding interval 
+data$steps &lt;- ifelse(is.na(data$steps), data$mean, data$steps)</code></pre>
+<p>As it could be seen, there are <strong>2304</strong> rows with <strong>step = NA</strong>. Other variables don’t have values <strong>NA</strong>.</p>
+<p>After that, the following code creates new histogram of the total number of steps taken each day, using data with imputed missing values (instead removing it).</p>
+<pre class="r"><code># Grouping data by date, adding sum and mean of steps for each date
+grouped.by.date &lt;- group_by(data, date)
+grouped.by.date &lt;- mutate(grouped.by.date, summ = sum(steps, na.rm = TRUE))
+grouped.by.date &lt;- unique(select(grouped.by.date, date, summ))
+
+# Plotting histogram of total number of steps taken each day
+png(filename = &quot;hist2.png&quot;)
+hist(grouped.by.date$summ, 
+     main = &quot;Total number of steps taken each day after missing values are imputed&quot;, 
+     xlab = &quot;&quot;, 
+     col = &quot;green&quot;)
+dev.off()</code></pre>
+<p><img src="hist2.png" alt="Histogram" /></p>
+<p>It can be seen that histogram of the total number of steps taken each day in this case has the same shape then the same histogram with removed <strong>NA</strong>’s. The difference is that now hisogram is higher in it center.</p>
+<p>Mean and median number of steps taken each day are calculated by the following code:</p>
+<pre class="r"><code># Calulating mean and median number of steps taken each day
+mean.steps.na &lt;- mean(grouped.by.date$summ)
+median.steps.na &lt;- median(grouped.by.date$summ)</code></pre>
+<p>New <strong>mean.na</strong> and <strong>median.na</strong> are equal between each other and equal to “old” <strong>mean</strong> and <strong>median</strong> from data without <strong>NA</strong>’s: <strong>10766.19</strong>.</p>
+</div>
+<div id="are-there-differences-in-activity-patterns-between-weekdays-and-weekends" class="section level2">
+<h2>Are there differences in activity patterns between weekdays and weekends?</h2>
+<p>To find the answer to this question we will make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).</p>
+<p>This code adds data about days of weeks: is day a weekday, or weekend.</p>
+<pre class="r"><code># Adding data about weekdays
+Sys.setlocale(&quot;LC_TIME&quot;,&quot;English&quot;)
+# Adding name of the day
+data$weekday &lt;- weekdays(as.Date(data$date))
+# Adding type of the day (weekday or weekend)
+data$type &lt;- as.factor(ifelse(data$weekday == &#39;Saturday&#39; | data$weekday == &#39;Sunday&#39;, &quot;Weekend&quot;, &quot;Weekday&quot;))
+# Grouping data
+timeSeries &lt;- group_by(data, interval, type)
+timeSeries &lt;- mutate(timeSeries, mean_ts = mean(steps, na.rm = TRUE))
+timeSeries &lt;- unique(select(timeSeries, type, interval, mean_ts))</code></pre>
+<p>Now it is possible to create a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis).</p>
+<p>This code creates the plot:</p>
+<pre class="r"><code># Plot comparing the average number of steps taken per 5-minute interval across weekdays and weekends
+png(filename = &quot;figure/plot2.png&quot;)
+xyplot(mean_ts ~ interval | type, data = timeSeries, layout = c(1, 2), type = &#39;l&#39;, 
+       xlab = &quot;Interval&quot;,
+       ylab = &quot;Average number of steps&quot;)
+dev.off()</code></pre>
+<p><img src="figure/plot2.png" alt="Plot" /></p>
+</div>
+
+
+</div>
+
+<script>
+
+// add bootstrap table styles to pandoc tables
+$(document).ready(function () {
+  $('tr.header').parent('thead').parent('table').addClass('table table-condensed');
+});
+
+</script>
+
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+  (function () {
+    var script = document.createElement("script");
+    script.type = "text/javascript";
+    script.src  = "https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+    document.getElementsByTagName("head")[0].appendChild(script);
+  })();
+</script>
+
+</body>
+</html>
